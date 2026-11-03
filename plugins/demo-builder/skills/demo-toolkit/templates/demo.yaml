@@ -1,0 +1,68 @@
+# demo.yaml — single source of truth for one demo video.
+# Full reference: skills/demo-toolkit/references/spec-reference.md
+title: "Product demo"
+language: vi-VN                 # narration language (BCP-47): vi-VN, en-US, ja-JP...
+targetDuration: 120             # seconds; the review step warns if the cut is >15% off
+baseUrl: https://app.example.com  # relative urls below are resolved against this
+
+viewport: { width: 1600, height: 900 }      # browser size while recording (keep 16:9 = no black bars)
+output:
+  name: product-demo
+  width: 1920
+  height: 1080
+  fps: 30
+  formats: [mp4, vertical, gif]             # mp4 always; + vertical (9:16), square (1:1), gif preview
+  # thumbnail: { title: "Tiết kiệm 5 giờ mỗi tuần", at: 12.5 }
+
+voice:
+  provider: edge                # edge (free) | openai | elevenlabs | google | espeak | silent | file
+  voice: vi-VN-HoaiMyNeural     # edge: vi-VN-HoaiMyNeural (nữ) / vi-VN-NamMinhNeural (nam)
+  rate: "+0%"
+  lexicon:                      # how to pronounce brand names / acronyms (applied to TTS only)
+    CRM: "xê rê em"
+    Dashboard: "đát bọt"
+
+# music: { file: assets/music.mp3, volume: 0.12, duck: true }   # royalty-free bed, ducked under voice
+captions: { sidecar: true, burn: false }
+brand:
+  primary: "#4f46e5"
+  accent: "#22d3ee"
+  background: "#0b0d12"
+  # logo: assets/logo.png
+
+# Privacy: blur these CSS selectors in every frame; hide distracting UI.
+mask: []        # e.g. [".customer-email", "[data-pii]"]
+hide: []        # e.g. ["#intercom-container", ".cookie-banner"]
+
+# Off-camera steps (login, dismiss tours). Secrets come from env vars, never inline.
+setup: []
+#  - goto: /login
+#  - fill: { selector: "#email", text: "${DEMO_USER}" }
+#  - fill: { selector: "#password", text: "${DEMO_PASSWORD}" }
+#  - click: "button[type=submit]"
+#  - waitForUrl: /dashboard
+
+scenes:
+  - id: intro
+    type: card
+    eyebrow: "Demo sản phẩm"
+    title: "Quản lý khách hàng trong 2 phút"
+    subtitle: "Dành cho đội Sales của ACME"
+    narration: >
+      Xin chào! Trong hai phút tới, chúng ta sẽ xem cách đội Sales
+      quản lý khách hàng nhanh hơn với sản phẩm của chúng tôi.
+
+  - id: dashboard
+    url: /dashboard
+    chapter: "Tổng quan"
+    narration: >
+      Ngay khi đăng nhập, bạn thấy toàn bộ chỉ số quan trọng trên một màn hình.
+    actions:
+      - highlight: { selector: "[data-testid=kpi-revenue]", label: "Doanh thu tháng này" }
+      - zoom: { selector: "[data-testid=chart]", scale: 1.5, hold: 2 }
+
+  - id: outro
+    type: card
+    title: "Bắt đầu dùng thử miễn phí"
+    cta: "example.com/trial"
+    narration: Cảm ơn bạn đã theo dõi. Hãy bắt đầu dùng thử miễn phí ngay hôm nay!

@@ -1,0 +1,10 @@
+{
+  "name": "demo-builder",
+  "version": "0.1.0",
+  "description": "A squad of 10 agents that turns a product into a narrated customer demo video: discovery brief, script & storyboard, UI flow mapping, automated screen recording (Playwright: smooth cursor, highlights, zoom, privacy blur), AI voice-over (free Edge TTS incl. Vietnamese, OpenAI, ElevenLabs, Google or your own voice), captions, music, ffmpeg editing, QA, localisation and launch copy.",
+  "author": { "name": "quocthai179" },
+  "homepage": "https://github.com/quocthai179/DemoBuilder",
+  "repository": "https://github.com/quocthai179/DemoBuilder",
+  "license": "MIT",
+  "keywords": ["demo", "video", "screen-recording", "voiceover", "tts", "playwright", "ffmpeg", "captions", "product-marketing", "presales", "agents", "squad"]
+}
