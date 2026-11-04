@@ -1,6 +1,6 @@
 ---
 description: Make a complete product demo video end-to-end with the demo squad — brief → script → flow → voice → record → edit → QA → launch copy
-argument-hint: <product / app URL, audience or customer, goal, length, language — e.g. "app.acme.vn cho khách hàng ngân hàng, 2 phút, tiếng Việt">
+argument-hint: [product / app URL, audience or customer, goal, length, language — e.g. "app.acme.vn cho khách hàng ngân hàng, 2 phút, tiếng Việt"]
 ---
 
 Produce a customer demo video with the demo-builder squad for:

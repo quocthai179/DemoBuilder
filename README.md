@@ -112,12 +112,12 @@ scenes:
       - click: "[data-testid=bulk-approve]"
 ```
 
-Tham chiếu đầy đủ: [`skills/demo-toolkit/references/spec-reference.md`](plugins/demo-builder/skills/demo-toolkit/references/spec-reference.md).
+Tham chiếu đầy đủ: [`skills/demo-toolkit/references/spec-reference.md`](skills/demo-toolkit/references/spec-reference.md).
 
 ### Dùng toolkit trực tiếp (không cần agent)
 
 ```bash
-T=plugins/demo-builder/skills/demo-toolkit/scripts/demo.mjs
+T=skills/demo-toolkit/scripts/demo.mjs
 node $T doctor
 node $T init .demo/my-demo --title "My demo" --url https://staging.example.com
 node $T validate .demo/my-demo/demo.yaml
@@ -129,25 +129,35 @@ node $T record .demo/my-demo/demo.yaml --scenes approve   # quay lại 1 cảnh
 Thử ngay với app mẫu kèm theo:
 
 ```bash
-cp -r plugins/demo-builder/skills/demo-toolkit/examples/sample-app /tmp/sample-app
-node plugins/demo-builder/skills/demo-toolkit/scripts/demo.mjs build /tmp/sample-app/demo.yaml --provider silent
+cp -r skills/demo-toolkit/examples/sample-app /tmp/sample-app
+node skills/demo-toolkit/scripts/demo.mjs build /tmp/sample-app/demo.yaml --provider silent
 ```
 
 (`--provider silent` dùng giọng câm để thử nhịp; bỏ đi để dùng Edge TTS khi đã `pip install edge-tts`.)
 
 ## Cấu trúc repo
 
+Gốc repo chính là plugin (có cả `plugin.json` lẫn `marketplace.json`), nên vừa cài được qua marketplace, vừa tải lên dạng file zip được.
+
 ```
-.claude-plugin/marketplace.json
-plugins/demo-builder/
-├── .claude-plugin/plugin.json
-├── agents/        # 10 agent
-├── commands/      # 12 slash command
-└── skills/
-    ├── demo-playbook/     # quy trình, phân vai, workspace
-    ├── demo-toolkit/      # CLI demo.mjs (Playwright + ffmpeg), spec reference, template, app mẫu
-    ├── scriptwriting/     # cẩm nang viết kịch bản demo
-    └── voiceover/         # cẩm nang lồng tiếng & phát âm
+.claude-plugin/
+├── plugin.json        # manifest của plugin
+└── marketplace.json   # marketplace trỏ về "./"
+agents/                # 10 agent
+commands/              # 12 slash command
+skills/
+├── demo-playbook/     # quy trình, phân vai, workspace
+├── demo-toolkit/      # CLI demo.mjs (Playwright + ffmpeg), spec reference, template, app mẫu
+├── scriptwriting/     # cẩm nang viết kịch bản demo
+└── voiceover/         # cẩm nang lồng tiếng & phát âm
+```
+
+### Tải lên dạng file zip (claude.ai / Cowork)
+
+Nén **nội dung** của repo (để `.claude-plugin/plugin.json` nằm ngay ở gốc file zip, không bọc trong thư mục con):
+
+```bash
+git archive --format=zip -o demo-builder.zip HEAD
 ```
 
 ## Lưu ý

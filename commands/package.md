@@ -1,6 +1,6 @@
 ---
 description: Write launch & sales copy for a finished demo — titles, description with chapters, customer email, social posts, talking points
-argument-hint: <slug> [customer contact / channel / extra context]
+argument-hint: [slug] [customer contact / channel / extra context]
 ---
 
 Launch `demo-builder:launch-copywriter` for: $ARGUMENTS

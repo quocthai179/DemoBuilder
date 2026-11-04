@@ -1,6 +1,6 @@
 ---
 description: Make a localised version of a demo in another language (narration, cards, native voice, re-record in the app's locale or reuse footage)
-argument-hint: <slug> <language, e.g. en-US | ja-JP | th-TH>
+argument-hint: [slug] [language, e.g. en-US | ja-JP | th-TH]
 ---
 
 Launch `demo-builder:localizer` for: $ARGUMENTS

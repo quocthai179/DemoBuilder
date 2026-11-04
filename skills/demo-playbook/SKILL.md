@@ -1,6 +1,6 @@
 ---
 name: demo-playbook
-description: Playbook for the demo-builder squad — which agent does what when producing a product demo video for customers, the standard pipelines (new demo, quick fix, localisation, short cut), the `.demo/<slug>/` workspace layout, user checkpoints and the handoff format. Use when the user wants to make, fix, translate or package a demo video ("quay video demo", "làm video giới thiệu tính năng", "demo for customer"), asks which agent fits, or mentions `.demo/` artifacts.
+description: Playbook for the demo-builder squad — which agent does what when producing a product demo video for customers, the standard pipelines (new demo, quick fix, localisation, short cut), the .demo workspace layout, user checkpoints and the handoff format. Use when the user wants to make, fix, translate or package a demo video ("quay video demo", "làm video giới thiệu tính năng", "demo for customer"), asks which agent fits, or mentions `.demo/` artifacts.
 ---
 
 # Demo squad playbook

@@ -1,6 +1,6 @@
 ---
 description: Fix one thing fast — re-voice and/or re-record specific scenes and re-render
-argument-hint: <slug> <scene id(s)> <what is wrong, e.g. "dashboard: highlight comes too early, say 'tăng 30%' instead">
+argument-hint: [slug] [scene id(s)] [what is wrong, e.g. "dashboard: highlight comes too early, say 'tăng 30%' instead"]
 ---
 
 Quick fix loop for: $ARGUMENTS

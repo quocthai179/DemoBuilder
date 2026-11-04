@@ -1,13 +1,17 @@
 {
   "name": "demo-builder",
-  "owner": { "name": "quocthai179" },
-  "metadata": { "description": "Claude Code plugins for producing product demo videos." },
+  "owner": {
+    "name": "quocthai179"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for producing product demo videos."
+  },
   "plugins": [
     {
       "name": "demo-builder",
-      "source": "./plugins/demo-builder",
+      "source": "./",
       "description": "Squad of agents that scripts, records, voices, edits and QA's product demo videos for customers.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "productivity"
     }
   ]
