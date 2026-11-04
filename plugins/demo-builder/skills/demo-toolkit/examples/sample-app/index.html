@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Acme CRM</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f6fa;color:#111827}
+  header{display:flex;align-items:center;gap:24px;padding:14px 28px;background:#fff;border-bottom:1px solid #e5e7eb}
+  header b{font-size:20px;color:#4f46e5} nav a{margin-right:18px;color:#374151;text-decoration:none;font-weight:600;cursor:pointer}
+  nav a.active{color:#4f46e5} main{padding:28px;max-width:1200px;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:18px} .card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .kpi small{color:#6b7280;font-weight:600} .kpi div{font-size:34px;font-weight:800;margin-top:6px}
+  .chart{margin-top:18px;height:260px;display:flex;align-items:flex-end;gap:14px;padding:24px}
+  .bar{flex:1;background:linear-gradient(#818cf8,#4f46e5);border-radius:8px 8px 0 0}
+  table{width:100%;border-collapse:collapse} td,th{padding:12px;border-bottom:1px solid #eef0f4;text-align:left}
+  button{background:#4f46e5;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}
+  input{padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;width:320px}
+  .row{display:flex;gap:12px;align-items:center;margin:16px 0} .hidden{display:none} .toast{position:fixed;right:24px;bottom:24px;background:#10b981;color:#fff;padding:12px 18px;border-radius:10px;font-weight:700}
+</style>
+</head>
+<body>
+<header><b>Acme CRM</b><nav><a data-view="dashboard" class="active">Tổng quan</a><a data-view="contacts">Khách hàng</a></nav></header>
+<main>
+  <section id="dashboard">
+    <div class="kpis">
+      <div class="card kpi" data-testid="kpi-revenue"><small>Doanh thu tháng</small><div>1,28 tỷ ₫</div></div>
+      <div class="card kpi" data-testid="kpi-deals"><small>Cơ hội đang mở</small><div>86</div></div>
+      <div class="card kpi" data-testid="kpi-win"><small>Tỷ lệ chốt</small><div>34%</div></div>
+    </div>
+    <div class="card chart" data-testid="chart">
+      <div class="bar" style="height:40%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:48%"></div>
+      <div class="bar" style="height:70%"></div><div class="bar" style="height:66%"></div><div class="bar" style="height:90%"></div>
+    </div>
+  </section>
+  <section id="contacts" class="hidden">
+    <div class="row"><button id="add">+ Thêm khách hàng</button></div>
+    <div id="form" class="row hidden"><input id="name" placeholder="Tên khách hàng"><input id="email" placeholder="Email"><button id="save">Lưu</button></div>
+    <div class="card"><table><thead><tr><th>Tên</th><th>Email</th><th>Trạng thái</th></tr></thead>
+      <tbody id="rows"><tr><td>Trần Thị B</td><td class="email">b.tran@example.com</td><td>Đang chăm sóc</td></tr></tbody></table></div>
+  </section>
+</main>
+<script>
+  const show = (v) => { for (const s of ['dashboard','contacts']) document.getElementById(s).classList.toggle('hidden', s !== v);
+    document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.view === v)); };
+  document.querySelectorAll('nav a').forEach(a => a.onclick = () => show(a.dataset.view));
+  document.getElementById('add').onclick = () => document.getElementById('form').classList.remove('hidden');
+  document.getElementById('save').onclick = () => {
+    const $ = (id) => document.getElementById(id);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${$('name').value}</td><td class="email">${$('email').value}</td><td>Mới</td>`;
+    $('rows').prepend(tr); const t = document.createElement('div'); t.className = 'toast'; t.textContent = 'Đã lưu khách hàng'; document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  };
+</script>
+</body>
+</html>
