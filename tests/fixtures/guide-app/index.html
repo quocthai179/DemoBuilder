@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Guide Test App</title>
+<style>
+body{font-family:sans-serif;margin:20px}
+#chat{position:fixed;right:10px;bottom:10px;background:#fc0;padding:10px}
+.pii{background:#eef}
+#hov{transition:background .5s;animation:pulse .5s 1}
+#hov:hover{background:#9f9}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+</style></head><body>
+<h1>Account</h1>
+<p>Owner: <span class="pii">Secret Person 4711</span></p>
+<form onsubmit="return false">
+ <label>Full name <input id="name" type="text"></label><br>
+ <label>Password <input id="pw" type="password"></label><br>
+ <label>Plan <select id="plan"><option value="free">Free</option><option value="pro">Pro</option></select></label><br>
+ <label><input id="terms" type="checkbox"> I agree to the terms</label><br>
+ <input type="file" id="f" style="display:none"><label for="f" id="fl">Choose avatar</label><br>
+ <button id="piibtn" type="button" class="pii">Secret Person 4711</button>
+ <button id="hov" type="button">Hover me</button>
+ <button id="go" type="submit">Create account</button>
+</form>
+<div style="margin-top:1100px"><button id="far" type="button">Far away</button></div>
+<div id="chat">Chat with us</div>
+</body></html>

@@ -1,0 +1,7 @@
+version: 1
+title: Create an account
+goal: Set up a new account.
+expectedResult: The account is created.
+scenes: [account]
+steps:
+  account.7: { include: true }

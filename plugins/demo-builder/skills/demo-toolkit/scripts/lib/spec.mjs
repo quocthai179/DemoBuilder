@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { resolveModule, fail, log } from './util.mjs';
+import { staticMaskProblems } from './selectors.mjs';
 
 export const ACTIONS = {
   goto: 'url',
@@ -52,7 +53,7 @@ const DEFAULTS = {
 
 const WPM = { vi: 165, en: 150, ja: 300, zh: 260, ko: 280, default: 150 };
 
-function loadYaml(text, file) {
+export function loadYaml(text, file) {
   const yaml = resolveModule('yaml');
   if (yaml) return yaml.parse(text);
   // Fallback: python3 + PyYAML (commonly available).
@@ -81,6 +82,19 @@ function interpolateEnv(value, where) {
   if (Array.isArray(value)) return value.map((v) => interpolateEnv(v, where));
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, interpolateEnv(v, where)]));
   return value;
+}
+
+/** Names of ${VAR} references in a raw (pre-interpolation) value. */
+function envRefsOf(raw) {
+  return [...new Set([...JSON.stringify(raw ?? null).matchAll(ENV_RE)].map((m) => m[1]))];
+}
+
+/** Normalise + interpolate one raw action; passive `envRefs` records which ${VAR}s it used (for the guide secret guard). */
+function loadAction(raw, where, label) {
+  const envRefs = envRefsOf(raw);
+  const action = normaliseAction(interpolateEnv(raw, where), label);
+  if (envRefs.length) action.envRefs = envRefs;
+  return action;
 }
 
 /** Normalise `- click: "#save"` / `- type: {selector, text}` / `- wait: 500` into {name, ...args}. */
@@ -130,7 +144,7 @@ export function loadSpec(specPath) {
   if (!Array.isArray(spec.scenes) || !spec.scenes.length) fail(`${file}: "scenes" must be a non-empty list`);
 
   if (spec.baseUrl) spec.baseUrl = interpolateEnv(spec.baseUrl, 'baseUrl');
-  spec.setup = (spec.setup || []).map((a, i) => normaliseAction(interpolateEnv(a, `setup[${i}]`), `setup[${i}]`));
+  spec.setup = (spec.setup || []).map((a, i) => loadAction(a, `setup[${i}]`, `setup[${i}]`));
 
   const ids = new Set();
   spec.scenes = spec.scenes.map((s, i) => {
@@ -147,7 +161,7 @@ export function loadSpec(specPath) {
       narration: String(s.narration || '').trim(),
       voice: merge(spec.voice, s.voice),
       url: s.url ? interpolateEnv(s.url, `${where}.url`) : null,
-      actions: (s.actions || []).map((a, j) => normaliseAction(interpolateEnv(a, `${where}.actions[${j}]`), `${where}.actions[${j}] (${id})`)),
+      actions: (s.actions || []).map((a, j) => loadAction(a, `${where}.actions[${j}]`, `${where}.actions[${j}] (${id})`)),
       chapter: s.chapter ?? (type === 'card' ? s.title : null) ?? null,
     };
     if (type === 'card' && scene.actions.length) log('warn', `${where} (${id}) is a card; its actions are ignored`);
@@ -179,6 +193,7 @@ export function validateSpec(spec) {
       }
     }
   }
+  for (const p of staticMaskProblems(spec)) problems.push(`${p.kind} selector [${p.selector}] is not usable: ${p.reason}. It could leave data unblurred or visible.`);
   if (spec.music?.file && !fs.existsSync(spec.abs(spec.music.file))) problems.push(`music.file not found: ${spec.music.file}`);
   if (spec.brand?.logo && !fs.existsSync(spec.abs(spec.brand.logo))) problems.push(`brand.logo not found: ${spec.brand.logo}`);
   return problems;

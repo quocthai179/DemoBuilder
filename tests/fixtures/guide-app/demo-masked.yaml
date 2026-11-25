@@ -1,0 +1,12 @@
+title: Masked targets
+viewport: { width: 1280, height: 720 }
+mask: [".pii"]
+scenes:
+  - id: m
+    url: ./masked.html
+    actions:
+      - click: "#avatar"
+      - click: "#email"
+      - click: "#ph"
+      - click: "#bill"
+      - click: "#plain"

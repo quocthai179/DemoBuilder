@@ -13,10 +13,11 @@ export const CACHE_HOME = process.env.DEMO_BUILDER_HOME || path.join(os.homedir(
 
 const COLORS = { info: '\x1b[36m', ok: '\x1b[32m', warn: '\x1b[33m', err: '\x1b[31m', dim: '\x1b[2m' };
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+export const logState = { stderr: false }; // true: keep stdout clean for machine-readable output (--json)
 export function log(level, ...msg) {
   const tag = { info: '•', ok: '✔', warn: '!', err: '✖', dim: ' ' }[level] || '•';
   const line = `${tag} ${msg.join(' ')}`;
-  const out = level === 'err' || level === 'warn' ? process.stderr : process.stdout;
+  const out = level === 'err' || level === 'warn' || logState.stderr ? process.stderr : process.stdout;
   out.write((useColor ? `${COLORS[level] || ''}${line}\x1b[0m` : line) + '\n');
 }
 

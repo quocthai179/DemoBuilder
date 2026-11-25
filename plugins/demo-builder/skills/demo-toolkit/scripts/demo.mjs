@@ -12,7 +12,7 @@ const HELP = `demo-builder toolkit
   node demo.mjs doctor                       check ffmpeg, Playwright, TTS providers, API keys
   node demo.mjs setup                        install playwright + yaml into ${CACHE_HOME}
   node demo.mjs init <dir> [--title "..."]   scaffold <dir>/demo.yaml (+ .gitignore)
-  node demo.mjs validate <spec>              check the spec; print scenes and estimated durations
+  node demo.mjs validate <spec>              check the spec (incl. mask/hide selectors); print scenes and estimated durations
   node demo.mjs inspect <url> [--spec s] [--out dir] [--storage auth.json]
                                              screenshot + table of clickable elements & selectors
   node demo.mjs voices [--lang vi-VN]        list free Edge TTS voices
@@ -25,6 +25,15 @@ const HELP = `demo-builder toolkit
   node demo.mjs build <spec> [--provider p]  tts → record → assemble → review
   node demo.mjs status <spec>                what is done / stale for each scene
   node demo.mjs clean <spec> [--all]         delete unused takes + build/ (--all: every generated file)
+
+  User guide (annotated screenshots + PDF, reads <spec dir>/guide.yaml, writes <spec dir>/guide/):
+  node demo.mjs guide plan <spec> [--json]   list the steps the guide would have; no browser, no files written
+  node demo.mjs guide capture <spec> [--confirm-env=<host[,host]>] [--headed] [--json]
+                                             run the flow, screenshot each step, write steps.json + guide.skeleton.md (+ guide.md if absent)
+  node demo.mjs guide render <spec> [--json] guide.md → guide.html → guide-draft.pdf + preview/contact-sheet.png
+  node demo.mjs guide refresh <spec> [--confirm-env=<host[,host]>] [--json]
+                                             re-capture images only and re-render (exit 2 if the flow's steps changed; never edits guide.md)
+  node demo.mjs guide approve <spec>         guide-draft.pdf → guide.pdf (after the user reviewed it)
 
 <spec> defaults to ./demo.yaml. Paths in the spec are relative to the spec file.`;
 
@@ -77,12 +86,28 @@ function init(dir, flags) {
   if (flags.lang) tpl = tpl.replace(/^language: .*$/m, `language: ${flags.lang}`);
   if (flags.url) tpl = tpl.replace(/^baseUrl: .*$/m, `baseUrl: ${flags.url}`);
   fs.writeFileSync(target, tpl);
-  fs.writeFileSync(path.join(dir, '.gitignore'), 'audio/\nrecordings/\ncards/\nbuild/\nreview/\noutput/\n*.auth.json\n');
+  fs.writeFileSync(path.join(dir, '.gitignore'), 'audio/\nrecordings/\ncards/\nbuild/\nreview/\noutput/\n*.auth.json\nguide/.staging/\nguide/errors/\n');
   log('ok', `Created ${target}`);
 }
 
-function validate(spec) {
+/** Round-trips mask/hide selectors through Chromium's CSS parser (the static checks already ran in validateSpec). Skipped when no browser is available. */
+async function checkMaskSelectorsInBrowser(spec) {
+  if (!spec.mask.length && !spec.hide.length) return [];
+  let browser;
+  try {
+    const { requireModule } = await import('./lib/util.mjs');
+    browser = await requireModule('playwright').chromium.launch();
+  } catch { log('dim', 'mask/hide selectors: only the static checks ran (Chromium is not available; run "doctor")'); return []; }
+  try {
+    const { assertMaskSelectors } = await import('./lib/selectors.mjs');
+    await assertMaskSelectors(browser, { mask: spec.mask, hide: spec.hide });
+    return [];
+  } catch (e) { if (e.code === 'MASK_INVALID') return [e.message]; throw e; } finally { await browser.close(); }
+}
+
+async function validate(spec) {
   const problems = validateSpec(spec);
+  if (!problems.some((p) => /^(mask|hide) selector/.test(p))) problems.push(...(await checkMaskSelectorsInBrowser(spec)));
   let total = 0;
   log('info', `${spec.title} — ${spec.scenes.length} scene(s), language ${spec.language}, voice ${spec.voice.provider}${spec.voice.voice ? `/${spec.voice.voice}` : ''}`);
   for (const s of spec.scenes) {
@@ -122,14 +147,19 @@ function clean(spec, flags) {
 }
 
 async function main() {
-  const { _: [cmd, target], flags } = parseArgs(process.argv.slice(2), ['headed', 'dry', 'force', 'draft', 'burn', 'help', 'all']);
+  const { _: [cmd, target, arg2], flags } = parseArgs(process.argv.slice(2), ['headed', 'dry', 'force', 'draft', 'burn', 'help', 'all', 'confirm-env', 'json']);
   if (!cmd || cmd === 'help' || flags.help) { console.log(HELP); return; }
   const spec = () => loadSpec(target || flags.spec || 'demo.yaml');
   switch (cmd) {
+    case 'guide': {
+      const { guideCli, GUIDE_SUBS } = await import('./lib/guide.mjs');
+      if (!GUIDE_SUBS.includes(target)) throw new DemoError(`Usage: guide <${GUIDE_SUBS.join('|')}> <spec> [--confirm-env=<host[,host]>] [--headed] [--json]`);
+      await guideCli(target, () => loadSpec(arg2 || flags.spec || 'demo.yaml'), flags); return;
+    }
     case 'doctor': return doctor();
     case 'setup': return setup();
     case 'init': return init(target, flags);
-    case 'validate': return validate(spec());
+    case 'validate': return await validate(spec());
     case 'status': return status(spec());
     case 'clean': return clean(spec(), flags);
     case 'inspect': {
@@ -156,7 +186,7 @@ async function main() {
     case 'review': { const { review } = await import('./lib/review.mjs'); await review(spec()); return; }
     case 'build': {
       const s = spec();
-      if (validateSpec(s).length) { validate(s); throw new DemoError('Fix the spec first.'); }
+      if (validateSpec(s).length) { await validate(s); throw new DemoError('Fix the spec first.'); }
       const { generateVoiceover } = await import('./lib/tts.mjs');
       const { record } = await import('./lib/record.mjs');
       const { assemble } = await import('./lib/assemble.mjs');

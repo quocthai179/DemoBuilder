@@ -1,0 +1,15 @@
+version: 1
+locale: en-US
+title: Add a new contact
+goal: Create a contact record so your sales team can follow up.
+expectedResult: The new contact appears at the top of the Customers list.
+scenes: [add-contact]
+steps:
+  add-contact.3: { value: "Jane Doe" }
+  add-contact.4: { value: "jane.doe@example.com", note: "The email address is blurred in screenshots for privacy." }
+  add-contact.5: { warning: "Each run creates a new contact. Use a test workspace." }
+manual:
+  - id: new-row
+    after: add-contact.5
+    selector: "#rows tr:first-child"
+    label: New contact
