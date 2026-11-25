@@ -5,10 +5,11 @@ import { requireModule, ensureDir, readJson, writeJson, log, fail, sleep, DemoEr
 import { estimateSeconds, selectScenes } from './spec.mjs';
 import { overlayInit } from './overlay.mjs';
 import { renderCards } from './cards.mjs';
+import { assertMaskSelectors, redactedScreenshot } from './selectors.mjs';
 
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function resolveUrl(spec, url) {
+export function resolveUrl(spec, url) {
   if (!url) return url;
   if (/^[a-z]+:/i.test(url)) return url;
   if (url.startsWith('file:') || !spec.baseUrl) return /^\.{0,2}\//.test(url) && fs.existsSync(spec.abs(url)) ? `file://${spec.abs(url)}` : url;
@@ -23,11 +24,12 @@ export function sceneNeed(spec, scene, manifest) {
   return { audio: dur, need: Math.max(scene.minDuration || 0, dur ? delay + dur + tail : 0), estimated: !audio && !!dur };
 }
 
-class Director {
+export class Director {
   constructor(page, spec, { dry }) {
     this.page = page; this.spec = spec; this.dry = dry; this.t = spec.timing;
     this.mouse = { x: spec.viewport.width / 2, y: spec.viewport.height / 2 };
     this.sceneStart = Date.now();
+    this.halt = null; // optional () => void that throws to stop the run at the next action boundary (guide capture: environment gate)
   }
   elapsed() { return (Date.now() - this.sceneStart) / 1000; }
   async overlay(fn, ...args) {
@@ -74,10 +76,12 @@ class Director {
   async goto(url, a = {}) {
     await this.page.goto(resolveUrl(this.spec, url), { waitUntil: a.waitUntil || 'load', timeout: a.timeout ?? 45000 });
     await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    if (this.halt) this.halt();
     await this.overlay('move', this.mouse.x, this.mouse.y);
   }
 
   async act(a) {
+    if (this.halt) this.halt();
     const p = this.page; const t = this.t;
     switch (a.name) {
       case 'goto': await this.goto(a.url, a); break;
@@ -152,16 +156,40 @@ class Director {
     await this.gap(a);
   }
 
-  async runActions(actions, label) {
+  async runActions(actions, label, { errorDir = this.spec.dirs.recordings, masks = [] } = {}) {
     for (let i = 0; i < actions.length; i++) {
       const a = actions[i];
       try { await this.act(a); } catch (e) {
-        const shot = path.join(this.spec.dirs.recordings, `error-${label.replace(/[^\w-]/g, '_')}-${i}.png`);
-        await this.page.screenshot({ path: shot }).catch(() => {});
+        if (e instanceof DemoError && e.code) throw e; // a coded stop (e.g. ENV_UNCONFIRMED) is not an action failure
+        const shot = path.join(errorDir, `error-${label.replace(/[^\w-]/g, '_')}-${i}.png`);
+        ensureDir(errorDir);
+        await redactedScreenshot(this.page, masks, { path: shot }).catch(() => {}); // masks only given by guide capture (opaque boxes); video keeps the plain error screenshot
         throw new DemoError(`${label} action #${i} (${a.name} ${a.selector || a.url || a.key || ''}) failed on ${this.page.url()}\n  ${String(e.message).split('\n')[0]}\n  screenshot: ${shot}\n  tip: ${this.page.url() === 'about:blank' ? 'the page is blank — give this scene a "url:" or set baseUrl' : `node demo.mjs inspect "${this.page.url()}" to list selectors`}`);
       }
     }
   }
+}
+
+/**
+ * Off-camera session prep: load auth.storageState (unless `fresh`), run `setup:` in its own context,
+ * return the resulting storageState. Writes `auth.save` only when `save` is true. `onContext(ctx)` runs on the setup context before any page opens; `halt()` (optional) throws to stop before the next setup action; `masks` (guide capture) are covered by opaque boxes in the error screenshot.
+ */
+export async function prepareSession(browser, spec, ctxOpts, { save = true, fresh = false, errorDir, onContext, halt = null, masks = [] } = {}) {
+  let storageState = !fresh && spec.auth?.storageState && fs.existsSync(spec.abs(spec.auth.storageState)) ? spec.abs(spec.auth.storageState) : undefined;
+  if (spec.setup.length) {
+    log('info', `setup: ${spec.setup.length} off-camera action(s)`);
+    const sctx = await browser.newContext({ ...ctxOpts, storageState });
+    if (onContext) await onContext(sctx); // hook for callers that gate or observe setup traffic (guide capture)
+    const spage = await sctx.newPage();
+    const d = new Director(spage, spec, { dry: true });
+    d.halt = halt;
+    if (spec.baseUrl && spec.setup[0].name !== 'goto') await d.goto(spec.baseUrl);
+    await d.runActions(spec.setup, 'setup', errorDir ? { errorDir, masks } : undefined);
+    storageState = await sctx.storageState();
+    if (save && spec.auth?.save) writeJson(spec.abs(spec.auth.save), storageState);
+    await sctx.close();
+  }
+  return storageState;
 }
 
 export async function record(spec, { scenes: sceneFlag, headed = false, dry = false } = {}) {
@@ -175,6 +203,7 @@ export async function record(spec, { scenes: sceneFlag, headed = false, dry = fa
 
   const browser = await chromium.launch({ headless: !(headed || spec.headless === false), args: ['--hide-scrollbars', '--disable-blink-features=AutomationControlled'] });
   try {
+    await assertMaskSelectors(browser, { mask: spec.mask, hide: spec.hide }, 'demo.yaml (mask/hide)');
     if (!dry) await renderCards(spec, { browser, only: selected.map((s) => s.id) });
     if (!screens.length) { log('info', 'No screen scenes selected.'); return timeline; }
 
@@ -187,18 +216,7 @@ export async function record(spec, { scenes: sceneFlag, headed = false, dry = fa
       viewport: spec.viewport, deviceScaleFactor: 1, locale: spec.locale || spec.language, colorScheme: spec.colorScheme || 'light',
       timezoneId: spec.timezone, ignoreHTTPSErrors: !!spec.ignoreHTTPSErrors,
     };
-    let storageState = spec.auth?.storageState && fs.existsSync(spec.abs(spec.auth.storageState)) ? spec.abs(spec.auth.storageState) : undefined;
-    if (spec.setup.length) {
-      log('info', `setup: ${spec.setup.length} off-camera action(s)`);
-      const sctx = await browser.newContext({ ...ctxOpts, storageState });
-      const spage = await sctx.newPage();
-      const d = new Director(spage, spec, { dry: true });
-      if (spec.baseUrl && spec.setup[0].name !== 'goto') await d.goto(spec.baseUrl);
-      await d.runActions(spec.setup, 'setup');
-      storageState = await sctx.storageState();
-      if (spec.auth?.save) writeJson(spec.abs(spec.auth.save), storageState);
-      await sctx.close();
-    }
+    const storageState = await prepareSession(browser, spec, ctxOpts);
 
     const tmpDir = ensureDir(path.join(spec.dirs.recordings, '.tmp'));
     const ctx = await browser.newContext({ ...ctxOpts, storageState, ...(dry ? {} : { recordVideo: { dir: tmpDir, size: spec.viewport } }) });

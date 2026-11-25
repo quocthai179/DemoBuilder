@@ -1,0 +1,23 @@
+title: Guide test app
+viewport: { width: 1280, height: 720 }
+mask: [".pii"]
+hide: ["#chat"]
+scenes:
+  - id: intro
+    type: card
+    title: Welcome
+    narration: Welcome.
+  - id: account
+    url: ./index.html
+    actions:
+      - wait: 100
+      - type: { selector: "#name", text: "Jane Doe" }
+      - type: { selector: "#pw", text: "${GUIDE_TEST_SECRET}" }
+      - select: { selector: "#plan", value: pro }
+      - check: "#terms"
+      - upload: { selector: "#f", file: ./index.html }
+      - hover: "#hov"
+      - click: "#piibtn"
+      - click: "#far"
+      - press: { key: Enter }
+      - click: "#go"

@@ -1,0 +1,8 @@
+title: Prod-like host
+baseUrl: https://app.acme-corp.com
+viewport: { width: 1280, height: 720 }
+scenes:
+  - id: main
+    url: /index.html
+    actions:
+      - click: "#go"

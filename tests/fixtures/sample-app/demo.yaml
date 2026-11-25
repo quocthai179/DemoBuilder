@@ -1,0 +1,53 @@
+# Example demo for the bundled sample app (examples/sample-app/index.html).
+# Try it (copy this folder somewhere writable first):
+#   node <toolkit>/scripts/demo.mjs build sample-app/demo.yaml --provider silent
+title: "Acme CRM — quản lý khách hàng trong 1 phút"
+language: vi-VN
+targetDuration: 45
+viewport: { width: 1280, height: 720 }   # keep 16:9 so the 1920x1080 output has no black bars
+output: { name: acme-crm-demo, formats: [mp4, vertical, gif], thumbnail: { title: "Thêm khách hàng trong 10 giây" } }
+voice:
+  provider: edge
+  voice: vi-VN-HoaiMyNeural
+  lexicon: { CRM: "xê rê em" }
+brand: { primary: "#4f46e5", accent: "#22d3ee" }
+mask: [".email"]
+captions: { sidecar: true, burn: true }
+
+scenes:
+  - id: intro
+    type: card
+    eyebrow: "Demo sản phẩm"
+    title: "Acme CRM"
+    subtitle: "Quản lý khách hàng nhanh hơn cho đội Sales"
+    narration: Xin chào! Hãy cùng xem Acme CRM giúp đội Sales làm việc nhanh hơn như thế nào.
+
+  - id: dashboard
+    url: ./index.html
+    chapter: "Tổng quan"
+    narration: >
+      Màn hình tổng quan hiển thị doanh thu, cơ hội đang mở và tỷ lệ chốt đơn.
+      Biểu đồ cho thấy doanh thu tăng đều qua từng tháng.
+    actions:
+      - highlight: { selector: "[data-testid=kpi-revenue]", label: "Doanh thu tháng này", ms: 1600 }
+      - at: 3.5
+      - zoom: { selector: "[data-testid=chart]", scale: 1.4, hold: 1.5 }
+
+  - id: add-contact
+    chapter: "Thêm khách hàng"
+    narration: >
+      Để thêm khách hàng mới, chỉ cần mở tab Khách hàng, nhập tên và email, rồi bấm Lưu.
+      Email được làm mờ để bảo vệ dữ liệu cá nhân.
+    actions:
+      - click: "nav >> text=Khách hàng"
+      - click: "#add"
+      - type: { selector: "#name", text: "Nguyễn Văn A" }
+      - type: { selector: "#email", text: "a.nguyen@example.com", delay: 35 }
+      - click: "#save"
+      - spotlight: { selector: "#rows tr:first-child", label: "Khách hàng mới đã được thêm", ms: 1800 }
+
+  - id: outro
+    type: card
+    title: "Dùng thử miễn phí 14 ngày"
+    cta: "acme.example/trial"
+    narration: Cảm ơn bạn đã theo dõi. Đăng ký dùng thử miễn phí ngay hôm nay!
